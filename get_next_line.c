@@ -6,39 +6,106 @@
 typedef unsigned int uint;
 
 #include <stdio.h>
+typedef struct s_line
+{
+	uint sz;
+	char *buf;
+	t_list *line_parts;
+	t_list **tail;
+} t_line;
+
+//TODO init t_line
+void ft_init_line(t_line *l)
+{
+	l->sz = 0;
+	l->tail = NULL;
+
+
+static void ft_save_line_buf(t_line *l, int *errcode)
+{
+	uint i;
+	t_list *new_cell;
+
+	i = l->sz % BUFFSIZE;
+	if (i == 0)
+		i = BUFFSIZE;
+	l->buf[i] = '\0';
+	new_cell = ft_lstnew(l->buf);
+	if (!new_cell)
+	{
+		free(l->buf);
+		*errcode = -1;
+	}
+	// ptr/precedence pbs?
+	(*l->tail)->next = new_cell;
+	*l->tail = new_cell->next;
+}
+
+void static int ft_next_read(int fd, char *rd_buff, char **w_buff, int *errcode)
+{
+	int nread;
+
+	nread = read(fd, rd_buff, BUFFSIZE);
+	if (nread == -1)
+	{
+		*errcode = -1;
+		return (-1);
+	}
+	*w_buff = malloc(BUFFSIZE + 1);
+	if (!(*w_buff))
+		*errcode = -1;
+	return (nread);
+}
+
+static char *ft_meld_parts(t_line *l, int errcode)
+{
+	char *str_line;
+	char *line_pos;
+	t_list *lst;
+
+	str_line = malloc(sizeof(char) * (l->sz + 1));
+	if (l->sz == 0 || errcode == 1 || !str_line)
+	{
+		free(str_line);
+		ft_lstclear(&l->parts, free);
+		return (NULL);
+	}
+	lst = l->parts;
+	line_pos = str_line;
+	while (lst)
+	{
+		line_pos = ft_us_streamcpy(line_pos, lst->content);
+		lst = lst->next;
+	}
+	ft_lstclear(&l->parts, free);
+	return (str_line);
+}
 
 char *get_next_line(int fd)
 {
 	static char buff[BUFFSIZE];
 	static uint ibuf = 0;
-	uint line_sz;
-	char *line_buf;
-	t_list *line_parts;
+	t_line l;
 	int nread;
-	char guard;
+	int errcode;
 
 	line_sz = 0;
-	line_buf = &guard; // see (1)
-	while (buff[ibuf] != '\n' && ibuf != (uint) nread)
+	line_buf = ft_malloc_errcode(sizeof(char), &errcode); // see (1)
+	while (errcode != -1 && buff[ibuf] != '\n' && ibuf != (uint) nread)
 	{
 		if (ibuf == 0)
 		{
-			line_buf[line_sz++ % (BUFFSIZE + 1)] = '\0';
-			ft_lstadd_front(&line_parts, ft_lstnew(line_buf));
-			//TODO ext fst time (1) ^^^
-			nread = read(fd, buff, BUFFSIZE);
-			line_buf = malloc(BUFFSIZE + 1);
+			ft_save_line_buf(&l, &errcode);
+			nread = ft_next_read(fd, buff, &l.buf, &errcode);
 		}
-		line[line_sz++ % (BUFFSIZE + 1)] = buff[ibuf++];
+		if (errcode != -1)
+			l.buf[line_sz++ % (BUFFSIZE + 1)] = buff[ibuf++];
 		ibuf %= BUFFSIZE;
 	}
 	if (ibuf != (uint) nread)
 		line_parts[line_sz++ % (BUFFSIZE + 1)] = buff[ibuf++];
-	line_buf[line_sz++ % (BUFFSIZE + 1)] = '\0';
-	ft_lstadd_front(line_parts, ft_lstnew(line_buf));
-	if (line_sz == 0)
-		return (NULL);
-	return (ft_merge_parts(line_parts, line_sz));
+   ft_save_line_buf(&l, &errcode);
+	return (ft_meld_parts(&l, errcode));
 }
 
 #include <fcntl.h>
