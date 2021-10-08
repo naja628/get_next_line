@@ -5,7 +5,6 @@
 
 typedef unsigned int uint;
 
-#include <stdio.h>
 typedef struct s_line
 {
 	uint sz;
@@ -18,8 +17,9 @@ typedef struct s_line
 void ft_init_line(t_line *l)
 {
 	l->sz = 0;
-	l->tail = NULL;
-
+	l->parts = NULL;
+	l->tail = &parts; 
+}
 
 static void ft_save_line_buf(t_line *l, int *errcode)
 {
@@ -37,8 +37,8 @@ static void ft_save_line_buf(t_line *l, int *errcode)
 		*errcode = -1;
 	}
 	// ptr/precedence pbs?
-	(*l->tail)->next = new_cell;
-	*l->tail = new_cell->next;
+	*l->tail = new_cell;
+	l->tail = &new_cell->next;
 }
 
 void static int ft_next_read(int fd, char *rd_buff, char **w_buff, int *errcode)
@@ -89,8 +89,8 @@ char *get_next_line(int fd)
 	int nread;
 	int errcode;
 
-	line_sz = 0;
-	line_buf = ft_malloc_errcode(sizeof(char), &errcode); // see (1)
+	ft_init_line(&l);
+	l.buf = ft_malloc_errcode(sizeof(char), &errcode); // see (1)
 	while (errcode != -1 && buff[ibuf] != '\n' && ibuf != (uint) nread)
 	{
 		if (ibuf == 0)
