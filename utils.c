@@ -1,12 +1,5 @@
-// ft_malloc_err
-// ft_lstclear
-// ft_lstnew
-
-typedef struct s_list
-{
-	void *content;
-	struct s_list *next;
-} t_list;
+#include<stdlib.h>
+#include "get_next_line.h"
 
 t_list *ft_lstnew(void *content)
 {
@@ -49,4 +42,3 @@ char *ft_us_streamcpy(char *dest, char const *src)
 	*dest = '\0';
 	return (dest);
 }
-

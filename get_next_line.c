@@ -1,20 +1,10 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include "get_next_line.h"
 
 #define BUFFSIZE 10
 
-typedef unsigned int uint;
-
-typedef struct s_line
-{
-	uint sz;
-	char *buf;
-	t_list *line_parts;
-	t_list **tail;
-} t_line;
-
-//TODO init t_line
-void ft_init_line(t_line *l)
+static void ft_init_line(t_line *l)
 {
 	l->sz = 0;
 	l->parts = NULL;
