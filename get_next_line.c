@@ -8,7 +8,7 @@ static void ft_init_line(t_line *l)
 {
 	l->sz = 0;
 	l->parts = NULL;
-	l->tail = &parts; 
+	l->tail = &l->parts; 
 }
 
 static void ft_save_line_buf(t_line *l, int *errcode)
@@ -31,7 +31,7 @@ static void ft_save_line_buf(t_line *l, int *errcode)
 	l->tail = &new_cell->next;
 }
 
-void static int ft_next_read(int fd, char *rd_buff, char **w_buff, int *errcode)
+static int ft_next_read(int fd, char *rd_buff, char **w_buff, int *errcode)
 {
 	int nread;
 
@@ -71,6 +71,9 @@ static char *ft_meld_parts(t_line *l, int errcode)
 	return (str_line);
 }
 
+//TODO remove 
+#include <stdio.h>
+
 char *get_next_line(int fd)
 {
 	static char buff[BUFFSIZE];
@@ -79,6 +82,8 @@ char *get_next_line(int fd)
 	int nread;
 	int errcode;
 
+	errcode = 0;
+	nread = -1;
 	ft_init_line(&l);
 	l.buf = ft_malloc_errcode(sizeof(char), &errcode); // see (1)
 	while (errcode != -1 && buff[ibuf] != '\n' && ibuf != (uint) nread)
@@ -89,11 +94,12 @@ char *get_next_line(int fd)
 			nread = ft_next_read(fd, buff, &l.buf, &errcode);
 		}
 		if (errcode != -1)
-			l.buf[line_sz++ % (BUFFSIZE + 1)] = buff[ibuf++];
+			l.buf[l.sz++ % BUFFSIZE] = buff[ibuf++];
+		printf("%u %c\n", l.sz, l.buf[l.sz]);
 		ibuf %= BUFFSIZE;
 	}
 	if (ibuf != (uint) nread)
-		line_parts[line_sz++ % (BUFFSIZE + 1)] = buff[ibuf++];
+		l.buf[l.sz++ % BUFFSIZE] = buff[ibuf++];
    ft_save_line_buf(&l, &errcode);
 	return (ft_meld_parts(&l, errcode));
 }
