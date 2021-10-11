@@ -1,10 +1,11 @@
 #include <unistd.h>
 #include <stdlib.h>
-#include "get_next_line.h"
 
 #define BUFFSIZE 10
 
 typedef unsigned int uint;
+
+#include <stdio.h>
 
 typedef struct s_rd_thread 
 {
@@ -29,7 +30,6 @@ static void ft_init_line(t_line *l, int *errcode)
 		*errcode = -1;
 		return ;
 	}
-	*errcode = 0;
 	l->i = 0;
 	l->sz = BUFFSIZE;
 }
@@ -44,16 +44,15 @@ static void ft_dblsz_line(t_line *l, int *errcode)
 		*errcode = -1;
 		return ;
 	}
-	ft_memcpy(bigger_buf, l->buf, l->sz);
+	ft_memcpy(bigger_buff, l->buf, l->sz);
 	l->sz *= 2;
-	free(l->buf);
-	l->buf = bigger_buf;
+	free(l->buff);
 }
 
 static char *ft_wrap_line(t_line *l, int errcode)
 {
 	char *out;
-	uint i;
+	unit i;
 
 	out = malloc(sizeof(char) * (l->i + 2));
 	if (errcode == -1 || l->i == 0 || !out)
@@ -64,14 +63,14 @@ static char *ft_wrap_line(t_line *l, int errcode)
 	}
 	i = 0;
 	while (i <= l->i)
-	{
-		out[i] = l->buf[i];
-		++i;
-	}
+		out[i++] = l->buf[i++];
 	free(l->buf);
 	out[i] = '\0';
 	return (out);
 }
+
+
+
 
 /* this function find the thread corresponding to fd
  * or creates it if it does not exist yet (modifying the lst arg)
@@ -81,7 +80,7 @@ static char *ft_wrap_line(t_line *l, int errcode)
  *
  * the malloc should be inside the if (*it == NULL)
  * but isn't for norminette and number of lines considerations */
-static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc) 
+static **t_list ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc) 
 {
 	t_list **it;
 
@@ -93,44 +92,46 @@ static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
 		*errc = -1;
 	if (*it == NULL && *errc != -1)
 	{
-		(*rd) -> fd = fd;
-		(*rd) -> i = 0;
-		(*rd) -> nread = BUFFSIZE;
+		*rd -> fd = fd;
+		*rd -> i = 0;
+		*rd -> nread = BUFFSIZE;
 		ft_lstput_front_errcode(lst, *rd, errc);
-		if (*errc != -1)
+		if (errc != -1)
 			return (lst);
 	}
 	free(*rd);
-	if (*errc == -1)
+	if (errc == -1)
 		return (NULL);
 	*rd = (*it) -> content;
 	return (it);
 }
 
+
+
 char *get_next_line(int fd)
 {
-	static t_list *threads = NULL;
+	static t_list *threads = NULL;	//TODO list for bonusnus
 	t_rd_thread *rd;
 	t_list **maybe_delme;
 	t_line l; 
 	int errcode;
 
-	ft_init_line(&l, &errcode);
+	ft_init_line(&l);
 	maybe_delme = ft_prep_rd(&threads, &rd, fd, &errcode); 
 	while (errcode != -1 && rd->i != (uint) rd->nread)
 	{
 		if (rd->i == 0)
-			rd->nread = ft_read_errcode(fd, rd->buf, BUFFSIZE, &errcode);
+			rd->nread = read(fd, (rd->buf), BUFFSIZE);// TODO handle read error
 		if (l.i >= l.sz)
 			ft_dblsz_line(&l, &errcode);
 		if (errcode != -1 && rd->nread != 0)
-			l.buf[l.i++] = (rd->buf)[rd->i++];
+			l.buf[l.i++] = (rd->buff)[rd->i++];
 		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
 			break;
 		rd->i %= BUFFSIZE;
 	}
 	if (errcode == -1 || l.sz == 0)
-		ft_lstrm_head(maybe_delme, free);
+		ft_lstrm_head(maybe_delme);
 	return (ft_wrap_line(&l, errcode));
 }
 
@@ -148,11 +149,10 @@ int main(int ac, char **av)
 	int i = 0;
 	while (line != NULL)
 	{
-		printf("line %d: %s", i++, line);
-		free(line);
+		printf("line %d : %s\n", i++, line);
 		line = get_next_line(fd);
+		//printf("line %d : %s\n", i++, line);
 	}
-	close (fd);
 	return (0);
 }
 
