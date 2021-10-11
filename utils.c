@@ -12,7 +12,6 @@ int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
 	return (nread);
 }
 
-/* generally this should have a del but not in our case */
 void ft_lstrm_head(t_list **lst, void (*del)(void *))
 {
 	t_list *tmp;

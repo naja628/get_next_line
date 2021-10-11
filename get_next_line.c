@@ -129,7 +129,7 @@ char *get_next_line(int fd)
 			break;
 		rd->i %= BUFFSIZE;
 	}
-	if (errcode == -1 || l.sz == 0)
+	if (errcode == -1 || l.i == 0)
 		ft_lstrm_head(maybe_delme, free);
 	return (ft_wrap_line(&l, errcode));
 }
