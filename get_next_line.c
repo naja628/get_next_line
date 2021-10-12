@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "get_next_line.h"
 
-#define BUFFSIZE 10
+#define BUFFSIZE 1
 
 typedef unsigned int uint;
 
@@ -55,7 +55,7 @@ static char *ft_wrap_line(t_line *l, int errcode)
 	char *out;
 	uint i;
 
-	out = malloc(sizeof(char) * (l->i + 2));
+	out = malloc(sizeof(char) * (l->i + 1));
 	if (errcode == -1 || l->i == 0 || !out)
 	{
 		free(out);
@@ -63,7 +63,7 @@ static char *ft_wrap_line(t_line *l, int errcode)
 		return (NULL);
 	}
 	i = 0;
-	while (i <= l->i)
+	while (i < l->i)
 	{
 		out[i] = l->buf[i];
 		++i;
@@ -113,25 +113,25 @@ char *get_next_line(int fd)
 	t_rd_thread *rd;
 	t_list **maybe_delme;
 	t_line l; 
-	int errcode;
+	int ec;
 
-	ft_init_line(&l, &errcode);
-	maybe_delme = ft_prep_rd(&threads, &rd, fd, &errcode); 
-	while (errcode != -1 && rd->i != (uint) rd->nread)
+	ft_init_line(&l, &ec);
+	maybe_delme = ft_prep_rd(&threads, &rd, fd, &ec); 
+	while (ec != -1 && !(rd->nread != BUFFSIZE && rd->i == (uint) rd->nread))
 	{
+		rd->i %= BUFFSIZE;
 		if (rd->i == 0)
-			rd->nread = ft_read_errcode(fd, rd->buf, BUFFSIZE, &errcode);
+			rd->nread = ft_read_errcode(fd, rd->buf, BUFFSIZE, &ec);
 		if (l.i >= l.sz)
-			ft_dblsz_line(&l, &errcode);
-		if (errcode != -1 && rd->nread != 0)
+			ft_dblsz_line(&l, &ec);
+		if (ec != -1 && rd->nread != 0)
 			l.buf[l.i++] = (rd->buf)[rd->i++];
 		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
 			break;
-		rd->i %= BUFFSIZE;
 	}
-	if (errcode == -1 || l.i == 0)
+	if (ec == -1 || l.i == 0)
 		ft_lstrm_head(maybe_delme, free);
-	return (ft_wrap_line(&l, errcode));
+	return (ft_wrap_line(&l, ec));
 }
 
 #include <fcntl.h>
