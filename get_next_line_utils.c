@@ -16,12 +16,14 @@ void ft_lstrm_head(t_list **lst, void (*del)(void *))
 {
 	t_list *tmp;
 
+	printf("will be freed : %p %p \n", (*lst)->content, (*lst));
 	del((*lst)->content);
 	tmp = (*lst)->next;
 	free (*lst);
 	*lst = tmp;
 }
 
+#include <stdio.h>
 void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
 {
 	t_list *new_cell;
@@ -32,6 +34,8 @@ void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
 		*errcode = -1;
 		return ;
 	}
+	//rm
+	printf("new_cell : %p\n", new_cell);
 	new_cell->content = content;
 	new_cell->next = *lst;
 	*lst = new_cell;

@@ -9,9 +9,9 @@
 typedef struct s_rd_thread 
 {
 	int fd;
-	char buf[BUFFER_SIZE];
 	t_uint i;
 	int nread;
+	char buf[BUFFER_SIZE];
 } t_rd_thread;
 
 typedef struct s_line
@@ -73,43 +73,9 @@ static char *ft_wrap_line(t_line *l, int errcode)
 	return (out);
 }
 
-/* this function find the thread corresponding to fd
- * or creates it if it does not exist yet (modifying the lst arg)
- * it modifies its rd argument to be the correct rd_thread
- * it returns the adress of the list node containing rd
- * so it can be deleted if needed.
- *
- * the malloc should be inside the if (*it == NULL)
- * but isn't for norminette and number of lines considerations */
-static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc) 
-{
-	t_list **it;
-
-	it = lst;
-	while (*it != NULL && ((t_rd_thread *) (*it)->content)->fd != fd)
-		*it = (*it)->next;
-	*rd = malloc(sizeof(t_rd_thread));
-	if (!*rd)
-		*errc = -1;
-	if (*it == NULL && *errc != -1)
-	{
-		(*rd) -> fd = fd;
-		(*rd) -> i = 0;
-		(*rd) -> nread = BUFFER_SIZE;
-		ft_lstput_front_errcode(lst, *rd, errc);
-		if (*errc != -1)
-			return (lst);
-	}
-	free(*rd);
-	if (*errc == -1)
-		return (NULL);
-	*rd = (*it) -> content;
-	return (it);
-}
-
 char *get_next_line(int fd)
 {
-	static t_list *threads = NULL;
+	static t_list *threads = {-1, 0, BUFFER_SIZE};
 	t_rd_thread *rd;
 	t_list **maybe_delme;
 	t_line l; 

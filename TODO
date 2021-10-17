@@ -1,3 +1,5 @@
-// growing buffer for the line with mempcy / mk_bigger_line
-// reader threads for the bonus
+in nonbonus : rd_buff on stack (not heap), no list 
+if possible : check BUFFER_SIZE value at compile time
+test input from kdb (not just redirection)
+norminette etc...
 

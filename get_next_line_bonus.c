@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
 #ifndef BUFFER_SIZE
 # define BUFFER_SIZE 42 
@@ -9,9 +9,9 @@
 typedef struct s_rd_thread 
 {
 	int fd;
-	char buf[BUFFER_SIZE];
 	t_uint i;
 	int nread;
+	char buf[BUFFER_SIZE];
 } t_rd_thread;
 
 typedef struct s_line
@@ -66,7 +66,7 @@ static char *ft_wrap_line(t_line *l, int errcode)
 	while (i < l->i)
 	{
 		out[i] = l->buf[i];
-	++i;
+		++i;
 	}
 	free(l->buf);
 	out[i] = '\0';
@@ -78,29 +78,27 @@ static char *ft_wrap_line(t_line *l, int errcode)
  * it modifies its rd argument to be the correct rd_thread
  * it returns the adress of the list node containing rd
  * so it can be deleted if needed.
- *
- * the malloc should be inside the if (*it == NULL)
- * but isn't for norminette and number of lines considerations */
+ */
 static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc) 
 {
 	t_list **it;
 
 	it = lst;
 	while (*it != NULL && ((t_rd_thread *) (*it)->content)->fd != fd)
-		*it = (*it)->next;
-	*rd = malloc(sizeof(t_rd_thread));
+		it = &((*it)->next);
 	if (!*rd)
 		*errc = -1;
 	if (*it == NULL && *errc != -1)
 	{
+		*rd = ft_malloc_errcode(sizeof(t_rd_thread), errc);
 		(*rd) -> fd = fd;
 		(*rd) -> i = 0;
 		(*rd) -> nread = BUFFER_SIZE;
 		ft_lstput_front_errcode(lst, *rd, errc);
 		if (*errc != -1)
 			return (lst);
+		free (*rd);
 	}
-	free(*rd);
 	if (*errc == -1)
 		return (NULL);
 	*rd = (*it) -> content;
@@ -110,7 +108,7 @@ static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
 char *get_next_line(int fd)
 {
 	static t_list *threads = NULL;
-	t_rd_thread *rd;
+	t_rd_thread *rd; /* does this *need* to be a ptr? */
 	t_list **maybe_delme;
 	t_line l; 
 	int ec;
@@ -129,7 +127,7 @@ char *get_next_line(int fd)
 		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
 			break;
 	}
-	if (ec == -1 || l.i == 0)
+	if (ec == -1 || l.i == 0 /*|| rd->i == (t_uint) rd -> nread*/) //3rd ok if nread = BSZ?
 		ft_lstrm_head(maybe_delme, free);
 	return (ft_wrap_line(&l, ec));
 }
@@ -156,6 +154,4 @@ int main(int ac, char **av)
 	close (fd);
 	return (0);
 }
-
 #endif
-

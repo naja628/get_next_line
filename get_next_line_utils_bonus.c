@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <unistd.h>
-#include "get_next_line.h"
+#include "get_next_line_bonus.h"
 
 int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
 {
@@ -48,5 +48,15 @@ void *ft_memcpy(void *dst, const void *src, size_t len)
 		++i;
 	}
 	return (dst);
+}
+
+void *ft_malloc_errcode(size_t n, int *errcode)
+{
+	void *alloced;
+
+	alloced = malloc(n);
+	if (!alloced)
+		*errcode = -1;
+	return (alloced);
 }
 
