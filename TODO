@@ -1,5 +1,6 @@
-in nonbonus : rd_buff on stack (not heap), no list 
-if possible : check BUFFER_SIZE value at compile time
-test input from kdb (not just redirection)
-norminette etc...
+maybe refactor init rd (reduce pointeriness)
+test kdb input
+test no bonus 2 files in 1 main
+more testers
+check eval checklist 
 
