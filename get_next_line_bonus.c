@@ -13,7 +13,7 @@
 typedef struct s_rd_thread
 {
 	int		fd;
-	t_uint	i;
+	size_t	i;
 	int		nrd;
 	char	buf[BUFFER_SIZE];
 }	t_rd_thread;
@@ -21,7 +21,7 @@ typedef struct s_rd_thread
 typedef struct s_line
 {
 	char	*buf;
-	t_uint	i;
+	size_t	i;
 	size_t	sz;
 }	t_line;
 
@@ -57,7 +57,7 @@ static void	ft_dblsz_line(t_line *l, int *errcode)
 static char	*ft_wrap_line(t_line *l, int errcode)
 {
 	char	*out;
-	t_uint	i;
+	size_t	i;
 
 	out = malloc(sizeof(char) * (l->i + 1));
 	if (errcode == -1 || l->i == 0 || !out)
@@ -79,10 +79,13 @@ static char	*ft_wrap_line(t_line *l, int errcode)
 
 /* this function find the thread corresponding to fd
  * or creates it if it does not exist yet (modifying the lst arg)
- * it modifies its rd argument to be the correct rd_thread
+ * it modifies *rd to be the correct rd_thread
  * it returns the adress of the list node containing rd
  * so it can be deleted if needed.
- */
+ *
+ * the choice to return the list and modify rd in place and not 
+ * vice versa is pretty arbitrary 
+ * except for the fact that triple pointers are frightening */
 static t_list	**ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
 {
 	t_list	**it;
@@ -107,6 +110,7 @@ static t_list	**ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
 	return (it);
 }
 
+/* rd needs to be a pointer because penult line of prep_rd */
 char	*get_next_line(int fd)
 {
 	static t_list	*threads = NULL;
@@ -115,10 +119,9 @@ char	*get_next_line(int fd)
 	t_line			l;
 	int				ec;
 
-	rd = NULL;
 	ft_init_line(&l, &ec);
 	maybe_delme = ft_prep_rd(&threads, &rd, fd, &ec);
-	while (ec != -1 && !(rd->nrd != BUFFER_SIZE && rd->i == (t_uint) rd->nrd))
+	while (ec != -1 && !(rd->nrd != BUFFER_SIZE && rd->i == (size_t) rd->nrd))
 	{
 		rd->i %= BUFFER_SIZE;
 		if (rd->i == 0)
@@ -130,12 +133,12 @@ char	*get_next_line(int fd)
 		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
 			break ;
 	}
-	if (ec == -1 || l.i == 0)
+	if (ec == -1 || l.i == 0 || (rd->fd == 0 && rd->i == (size_t) rd->nrd))
 		ft_lstrm_head(maybe_delme, free);
 	return (ft_wrap_line(&l, ec));
 }
 
-#ifdef TEST
+#ifdef TEST0
 # include <fcntl.h>
 # include <stdio.h>
 
@@ -153,6 +156,32 @@ int main(int ac, char **av)
 		printf("line %d: %s", i++, line);
 		free(line);
 		line = get_next_line(fd);
+	}
+	close(fd);
+	return (0);
+}
+#endif
+#ifdef TEST1
+# include <fcntl.h>
+# include <stdio.h>
+
+int main(int ac, char **av)
+{
+	if (ac != 2) 
+		return (-1);
+	char *line, *line2;
+	int fd = open(av[1], O_RDONLY);
+	line = get_next_line(0);
+	line2 = get_next_line(fd);
+	int i = 0;
+	while (line && line2)
+	{
+		printf("kdb line %d: %s", i++, line);
+		free(line);
+		line = get_next_line(0);
+		printf("file line %d: %s", i++, line2);
+		free(line2);
+		line2 = get_next_line(fd);
 	}
 	close (fd);
 	return (0);

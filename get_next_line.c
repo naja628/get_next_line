@@ -98,7 +98,7 @@ char	*get_next_line(int fd)
 	ft_init_line(&l, &ec);
 	if (fd != rd.fd)
 		ft_reset_buf(&rd, fd);
-	while (ec != -1 && !(rd.nrd != BUFFER_SIZE && rd.i == (t_uint) rd.nrd))
+	while (ec != -1 && !(rd.nrd != BUFFER_SIZE && rd.i == (size_t) rd.nrd))
 	{
 		rd.i %= BUFFER_SIZE;
 		if (rd.i == 0)
@@ -187,6 +187,8 @@ int main(int ac, char **av)
 		free(line);
 		line = get_next_line(fd2);
 	}
+	close(fd1);
+	close(fd2);
 	return 0;
 }
 

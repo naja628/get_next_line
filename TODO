@@ -1,6 +1,7 @@
 maybe refactor init rd (reduce pointeriness)
-test kdb input
-test no bonus 2 files in 1 main
+test kdb input OK	
+test no bonus 2 files in 1 main OK
 more testers
-check eval checklist 
+check eval checklist OK
+utils : size_t or t_uint?
 
