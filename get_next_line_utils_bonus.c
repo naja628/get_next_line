@@ -2,9 +2,9 @@
 #include <unistd.h>
 #include "get_next_line_bonus.h"
 
-int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
+int	ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
 {
-	int nread;
+	int	nread;
 
 	nread = read(fd, buf, n);
 	if (nread == -1)
@@ -12,9 +12,9 @@ int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
 	return (nread);
 }
 
-void ft_lstrm_head(t_list **lst, void (*del)(void *))
+void	ft_lstrm_head(t_list **lst, void (*del)(void *))
 {
-	t_list *tmp;
+	t_list	*tmp;
 
 	del((*lst)->content);
 	tmp = (*lst)->next;
@@ -22,9 +22,9 @@ void ft_lstrm_head(t_list **lst, void (*del)(void *))
 	*lst = tmp;
 }
 
-void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
+void	ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
 {
-	t_list *new_cell;
+	t_list	*new_cell;
 
 	new_cell = malloc(sizeof(t_list));
 	if (!new_cell)
@@ -37,9 +37,9 @@ void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
 	*lst = new_cell;
 }
 
-void *ft_memcpy(void *dst, const void *src, size_t len)
+void	*ft_memcpy(void *dst, const void *src, size_t len)
 {
-	t_uint i;
+	t_uint	i;
 
 	i = 0;
 	while (i < len)
@@ -50,13 +50,12 @@ void *ft_memcpy(void *dst, const void *src, size_t len)
 	return (dst);
 }
 
-void *ft_malloc_errcode(size_t n, int *errcode)
+void	*ft_malloc_errcode(size_t n, int *errcode)
 {
-	void *alloced;
+	void	*alloced;
 
 	alloced = malloc(n);
 	if (!alloced)
 		*errcode = -1;
 	return (alloced);
 }
-

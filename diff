@@ -1,0 +1,702 @@
+diff --git a/get_next_line.c b/get_next_line.c
+index 7397e42..76d0e25 100644
+--- a/get_next_line.c
++++ b/get_next_line.c
+@@ -3,25 +3,29 @@
+ #include "get_next_line.h"
+ 
+ #ifndef BUFFER_SIZE
+-# define BUFFER_SIZE 42 
++# define BUFFER_SIZE 42
++#endif
++#if BUFFER_SIZE < 1
++# undef BUFFER_SIZE
++# define BUFFER_SIZE 42
+ #endif
+ 
+-typedef struct s_rd_thread 
++typedef struct s_rd_thread
+ {
+-	int fd;
+-	t_uint i;
+-	int nread;
+-	char buf[BUFFER_SIZE];
+-} t_rd_thread;
++	int		fd;
++	t_uint	i;
++	int		nrd;
++	char	buf[BUFFER_SIZE];
++}	t_rd_thread;
+ 
+ typedef struct s_line
+ {
+-	char *buf;
+-	t_uint i;
+-	size_t sz;
+-} t_line;
++	char	*buf;
++	t_uint	i;
++	size_t	sz;
++}	t_line;
+ 
+-static void ft_init_line(t_line *l, int *errcode)
++static void	ft_init_line(t_line *l, int *errcode)
+ {
+ 	l->buf = malloc(sizeof(char) * BUFFER_SIZE);
+ 	if (!l->buf)
+@@ -34,9 +38,9 @@ static void ft_init_line(t_line *l, int *errcode)
+ 	l->sz = BUFFER_SIZE;
+ }
+ 
+-static void ft_dblsz_line(t_line *l, int *errcode)
++static void	ft_dblsz_line(t_line *l, int *errcode)
+ {
+-	char *bigger_buf;
++	char	*bigger_buf;
+ 
+ 	bigger_buf = malloc(2 * l->sz * sizeof(char));
+ 	if (!bigger_buf)
+@@ -50,10 +54,10 @@ static void ft_dblsz_line(t_line *l, int *errcode)
+ 	l->buf = bigger_buf;
+ }
+ 
+-static char *ft_wrap_line(t_line *l, int errcode)
++static char	*ft_wrap_line(t_line *l, int errcode)
+ {
+-	char *out;
+-	t_uint i;
++	char	*out;
++	t_uint	i;
+ 
+ 	out = malloc(sizeof(char) * (l->i + 1));
+ 	if (errcode == -1 || l->i == 0 || !out)
+@@ -66,37 +70,46 @@ static char *ft_wrap_line(t_line *l, int errcode)
+ 	while (i < l->i)
+ 	{
+ 		out[i] = l->buf[i];
+-	++i;
++		++i;
+ 	}
+ 	free(l->buf);
+ 	out[i] = '\0';
+ 	return (out);
+ }
+ 
+-char *get_next_line(int fd)
++/* it might seem odd to initialize nrd to BUFFER_SIZE
++ * but this is the easiest way to make the code work
++ * smoothly as this is the typical value of this field
++ * during runtime (ie after every non final succesful read)
++ */
++static void	ft_reset_buf(t_rd_thread *rd, int fd)
++{
++	rd->i = 0;
++	rd->fd = fd;
++	rd->nrd = BUFFER_SIZE;
++}
++
++char	*get_next_line(int fd)
+ {
+-	static t_list *threads = {-1, 0, BUFFER_SIZE};
+-	t_rd_thread *rd;
+-	t_list **maybe_delme;
+-	t_line l; 
+-	int ec;
++	static t_rd_thread	rd = {-1, 0, BUFFER_SIZE, {0}};
++	t_line				l;
++	int					ec;
+ 
+ 	ft_init_line(&l, &ec);
+-	maybe_delme = ft_prep_rd(&threads, &rd, fd, &ec); 
+-	while (ec != -1 && !(rd->nread != BUFFER_SIZE && rd->i == (t_uint) rd->nread))
++	if (fd != rd.fd)
++		ft_reset_buf(&rd, fd);
++	while (ec != -1 && !(rd.nrd != BUFFER_SIZE && rd.i == (t_uint) rd.nrd))
+ 	{
+-		rd->i %= BUFFER_SIZE;
+-		if (rd->i == 0)
+-			rd->nread = ft_read_errcode(fd, rd->buf, BUFFER_SIZE, &ec);
++		rd.i %= BUFFER_SIZE;
++		if (rd.i == 0)
++			rd.nrd = ft_read_errcode(fd, rd.buf, BUFFER_SIZE, &ec);
+ 		if (l.i >= l.sz)
+ 			ft_dblsz_line(&l, &ec);
+-		if (ec != -1 && rd->nread != 0)
+-			l.buf[l.i++] = (rd->buf)[rd->i++];
+-		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
+-			break;
++		if (ec != -1 && rd.nrd != 0)
++			l.buf[l.i++] = (rd.buf)[rd.i++];
++		if (rd.i != 0 && rd.buf[rd.i - 1] == '\n')
++			break ;
+ 	}
+-	if (ec == -1 || l.i == 0)
+-		ft_lstrm_head(maybe_delme, free);
+ 	return (ft_wrap_line(&l, ec));
+ }
+ 
+@@ -122,6 +135,4 @@ int main(int ac, char **av)
+ 	close (fd);
+ 	return (0);
+ }
+-
+ #endif
+-
+diff --git a/get_next_line.h b/get_next_line.h
+index 7450a4c..9332860 100644
+--- a/get_next_line.h
++++ b/get_next_line.h
+@@ -5,16 +5,14 @@
+ typedef unsigned int	t_uint;
+ typedef unsigned char	t_uchar;
+ 
+-typedef struct s_list 
++typedef struct s_list
+ {
+-	void *content;
+-	struct s_list *next;
+-} t_list;
++	void			*content;
++	struct s_list	*next;
++}	t_list;
+ 
+-int ft_read_errcode(int fd, char *buf, size_t n, int *errcode);
+-void ft_lstrm_head(t_list **lst, void (*del)(void *));
+-void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode);
+-void *ft_memcpy(void *dst, const void *src, size_t len);
+-char *get_next_line(int fd);
++int		ft_read_errcode(int fd, char *buf, size_t n, int *errcode);
++void	*ft_memcpy(void *dst, const void *src, size_t len);
++char	*get_next_line(int fd);
+ 
+ #endif
+diff --git a/get_next_line_bonus.c b/get_next_line_bonus.c
+index d756ad7..447061d 100644
+--- a/get_next_line_bonus.c
++++ b/get_next_line_bonus.c
+@@ -3,25 +3,29 @@
+ #include "get_next_line_bonus.h"
+ 
+ #ifndef BUFFER_SIZE
+-# define BUFFER_SIZE 42 
++# define BUFFER_SIZE 42
++#endif
++#if BUFFER_SIZE < 1
++# undef BUFFER_SIZE
++# define BUFFER_SIZE 42
+ #endif
+ 
+-typedef struct s_rd_thread 
++typedef struct s_rd_thread
+ {
+-	int fd;
+-	t_uint i;
+-	int nread;
+-	char buf[BUFFER_SIZE];
+-} t_rd_thread;
++	int		fd;
++	t_uint	i;
++	int		nrd;
++	char	buf[BUFFER_SIZE];
++}	t_rd_thread;
+ 
+ typedef struct s_line
+ {
+-	char *buf;
+-	t_uint i;
+-	size_t sz;
+-} t_line;
++	char	*buf;
++	t_uint	i;
++	size_t	sz;
++}	t_line;
+ 
+-static void ft_init_line(t_line *l, int *errcode)
++static void	ft_init_line(t_line *l, int *errcode)
+ {
+ 	l->buf = malloc(sizeof(char) * BUFFER_SIZE);
+ 	if (!l->buf)
+@@ -34,9 +38,9 @@ static void ft_init_line(t_line *l, int *errcode)
+ 	l->sz = BUFFER_SIZE;
+ }
+ 
+-static void ft_dblsz_line(t_line *l, int *errcode)
++static void	ft_dblsz_line(t_line *l, int *errcode)
+ {
+-	char *bigger_buf;
++	char	*bigger_buf;
+ 
+ 	bigger_buf = malloc(2 * l->sz * sizeof(char));
+ 	if (!bigger_buf)
+@@ -50,10 +54,10 @@ static void ft_dblsz_line(t_line *l, int *errcode)
+ 	l->buf = bigger_buf;
+ }
+ 
+-static char *ft_wrap_line(t_line *l, int errcode)
++static char	*ft_wrap_line(t_line *l, int errcode)
+ {
+-	char *out;
+-	t_uint i;
++	char	*out;
++	t_uint	i;
+ 
+ 	out = malloc(sizeof(char) * (l->i + 1));
+ 	if (errcode == -1 || l->i == 0 || !out)
+@@ -79,21 +83,21 @@ static char *ft_wrap_line(t_line *l, int errcode)
+  * it returns the adress of the list node containing rd
+  * so it can be deleted if needed.
+  */
+-static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc) 
++static t_list	**ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
+ {
+-	t_list **it;
++	t_list	**it;
+ 
+ 	it = lst;
+-	while (*it != NULL && ((t_rd_thread *) (*it)->content)->fd != fd)
++	while (*it != NULL && ((t_rd_thread *)(*it)->content)->fd != fd)
+ 		it = &((*it)->next);
+ 	if (!*rd)
+ 		*errc = -1;
+ 	if (*it == NULL && *errc != -1)
+ 	{
+ 		*rd = ft_malloc_errcode(sizeof(t_rd_thread), errc);
+-		(*rd) -> fd = fd;
+-		(*rd) -> i = 0;
+-		(*rd) -> nread = BUFFER_SIZE;
++		(*rd)->fd = fd;
++		(*rd)->i = 0;
++		(*rd)->nrd = BUFFER_SIZE;
+ 		ft_lstput_front_errcode(lst, *rd, errc);
+ 		if (*errc != -1)
+ 			return (lst);
+@@ -101,33 +105,33 @@ static t_list **ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
+ 	}
+ 	if (*errc == -1)
+ 		return (NULL);
+-	*rd = (*it) -> content;
++	*rd = (*it)->content;
+ 	return (it);
+ }
+ 
+-char *get_next_line(int fd)
++char	*get_next_line(int fd)
+ {
+-	static t_list *threads = NULL;
+-	t_rd_thread *rd; /* does this *need* to be a ptr? */
+-	t_list **maybe_delme;
+-	t_line l; 
+-	int ec;
++	static t_list	*threads = NULL;
++	t_rd_thread		*rd;
++	t_list			**maybe_delme;
++	t_line			l;
++	int				ec;
+ 
+ 	ft_init_line(&l, &ec);
+-	maybe_delme = ft_prep_rd(&threads, &rd, fd, &ec); 
+-	while (ec != -1 && !(rd->nread != BUFFER_SIZE && rd->i == (t_uint) rd->nread))
++	maybe_delme = ft_prep_rd(&threads, &rd, fd, &ec);
++	while (ec != -1 && !(rd->nrd != BUFFER_SIZE && rd->i == (t_uint) rd->nrd))
+ 	{
+ 		rd->i %= BUFFER_SIZE;
+ 		if (rd->i == 0)
+-			rd->nread = ft_read_errcode(fd, rd->buf, BUFFER_SIZE, &ec);
++			rd->nrd = ft_read_errcode(fd, rd->buf, BUFFER_SIZE, &ec);
+ 		if (l.i >= l.sz)
+ 			ft_dblsz_line(&l, &ec);
+-		if (ec != -1 && rd->nread != 0)
++		if (ec != -1 && rd->nrd != 0)
+ 			l.buf[l.i++] = (rd->buf)[rd->i++];
+ 		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
+-			break;
++			break ;
+ 	}
+-	if (ec == -1 || l.i == 0 /*|| rd->i == (t_uint) rd -> nread*/) //3rd ok if nread = BSZ?
++	if (ec == -1 || l.i == 0)
+ 		ft_lstrm_head(maybe_delme, free);
+ 	return (ft_wrap_line(&l, ec));
+ }
+diff --git a/get_next_line_bonus.h b/get_next_line_bonus.h
+index 7450a4c..e364525 100644
+--- a/get_next_line_bonus.h
++++ b/get_next_line_bonus.h
+@@ -7,14 +7,15 @@ typedef unsigned char	t_uchar;
+ 
+ typedef struct s_list 
+ {
+-	void *content;
+-	struct s_list *next;
+-} t_list;
++	void			*content;
++	struct s_list	*next;
++}	t_list;
+ 
+-int ft_read_errcode(int fd, char *buf, size_t n, int *errcode);
+-void ft_lstrm_head(t_list **lst, void (*del)(void *));
+-void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode);
+-void *ft_memcpy(void *dst, const void *src, size_t len);
+-char *get_next_line(int fd);
++int		ft_read_errcode(int fd, char *buf, size_t n, int *errcode);
++void	ft_lstrm_head(t_list **lst, void (*del)(void *));
++void	ft_lstput_front_errcode(t_list **lst, void *content, int *errcode);
++void	*ft_memcpy(void *dst, const void *src, size_t len);
++void	*ft_malloc_errcode(size_t n, int *errcode);
++char	*get_next_line(int fd);
+ 
+ #endif
+diff --git a/get_next_line_utils.c b/get_next_line_utils.c
+index b7b8a40..817aa66 100644
+--- a/get_next_line_utils.c
++++ b/get_next_line_utils.c
+@@ -2,9 +2,9 @@
+ #include <unistd.h>
+ #include "get_next_line.h"
+ 
+-int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
++int	ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
+ {
+-	int nread;
++	int	nread;
+ 
+ 	nread = read(fd, buf, n);
+ 	if (nread == -1)
+@@ -12,38 +12,9 @@ int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
+ 	return (nread);
+ }
+ 
+-void ft_lstrm_head(t_list **lst, void (*del)(void *))
++void	*ft_memcpy(void *dst, const void *src, size_t len)
+ {
+-	t_list *tmp;
+-
+-	printf("will be freed : %p %p \n", (*lst)->content, (*lst));
+-	del((*lst)->content);
+-	tmp = (*lst)->next;
+-	free (*lst);
+-	*lst = tmp;
+-}
+-
+-#include <stdio.h>
+-void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
+-{
+-	t_list *new_cell;
+-
+-	new_cell = malloc(sizeof(t_list));
+-	if (!new_cell)
+-	{
+-		*errcode = -1;
+-		return ;
+-	}
+-	//rm
+-	printf("new_cell : %p\n", new_cell);
+-	new_cell->content = content;
+-	new_cell->next = *lst;
+-	*lst = new_cell;
+-}
+-
+-void *ft_memcpy(void *dst, const void *src, size_t len)
+-{
+-	t_uint i;
++	t_uint	i;
+ 
+ 	i = 0;
+ 	while (i < len)
+@@ -53,4 +24,3 @@ void *ft_memcpy(void *dst, const void *src, size_t len)
+ 	}
+ 	return (dst);
+ }
+-
+diff --git a/get_next_line_utils_bonus.c b/get_next_line_utils_bonus.c
+index 44dd5ae..de2a367 100644
+--- a/get_next_line_utils_bonus.c
++++ b/get_next_line_utils_bonus.c
+@@ -2,9 +2,9 @@
+ #include <unistd.h>
+ #include "get_next_line_bonus.h"
+ 
+-int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
++int	ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
+ {
+-	int nread;
++	int	nread;
+ 
+ 	nread = read(fd, buf, n);
+ 	if (nread == -1)
+@@ -12,9 +12,9 @@ int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
+ 	return (nread);
+ }
+ 
+-void ft_lstrm_head(t_list **lst, void (*del)(void *))
++void	ft_lstrm_head(t_list **lst, void (*del)(void *))
+ {
+-	t_list *tmp;
++	t_list	*tmp;
+ 
+ 	del((*lst)->content);
+ 	tmp = (*lst)->next;
+@@ -22,9 +22,9 @@ void ft_lstrm_head(t_list **lst, void (*del)(void *))
+ 	*lst = tmp;
+ }
+ 
+-void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
++void	ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
+ {
+-	t_list *new_cell;
++	t_list	*new_cell;
+ 
+ 	new_cell = malloc(sizeof(t_list));
+ 	if (!new_cell)
+@@ -37,9 +37,9 @@ void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
+ 	*lst = new_cell;
+ }
+ 
+-void *ft_memcpy(void *dst, const void *src, size_t len)
++void	*ft_memcpy(void *dst, const void *src, size_t len)
+ {
+-	t_uint i;
++	t_uint	i;
+ 
+ 	i = 0;
+ 	while (i < len)
+@@ -50,13 +50,12 @@ void *ft_memcpy(void *dst, const void *src, size_t len)
+ 	return (dst);
+ }
+ 
+-void *ft_malloc_errcode(size_t n, int *errcode)
++void	*ft_malloc_errcode(size_t n, int *errcode)
+ {
+-	void *alloced;
++	void	*alloced;
+ 
+ 	alloced = malloc(n);
+ 	if (!alloced)
+ 		*errcode = -1;
+ 	return (alloced);
+ }
+-
+diff --git a/tmp.c b/tmp.c
+deleted file mode 100644
+index 9dcbe4c..0000000
+--- a/tmp.c
++++ /dev/null
+@@ -1,160 +0,0 @@
+-#include <unistd.h>
+-#include <stdlib.h>
+-
+-#define BUFFSIZE 10
+-
+-typedef unsigned int uint;
+-
+-#include <stdio.h>
+-
+-typedef struct s_rd_thread 
+-{
+-	int fd;
+-	char buf[BUFFSIZE];
+-	uint i;
+-	int nread;
+-} t_rd_thread;
+-
+-typedef struct s_line
+-{
+-	char *buf;
+-	uint i;
+-	size_t sz;
+-} t_line;
+-
+-static void ft_init_line(t_line *l, int *errcode)
+-{
+-	l->buf = malloc(sizeof(char) * BUFFSIZE);
+-	if (!l->buf)
+-	{
+-		*errcode = -1;
+-		return ;
+-	}
+-	l->i = 0;
+-	l->sz = BUFFSIZE;
+-}
+-
+-static void ft_dblsz_line(t_line *l, int *errcode)
+-{
+-	char *bigger_buf;
+-
+-	bigger_buf = malloc(2 * l->sz * sizeof(char));
+-	if (!bigger_buf)
+-	{
+-		*errcode = -1;
+-		return ;
+-	}
+-	ft_memcpy(bigger_buff, l->buf, l->sz);
+-	l->sz *= 2;
+-	free(l->buff);
+-}
+-
+-static char *ft_wrap_line(t_line *l, int errcode)
+-{
+-	char *out;
+-	unit i;
+-
+-	out = malloc(sizeof(char) * (l->i + 2));
+-	if (errcode == -1 || l->i == 0 || !out)
+-	{
+-		free(out);
+-		free(l->buf);
+-		return (NULL);
+-	}
+-	i = 0;
+-	while (i <= l->i)
+-		out[i++] = l->buf[i++];
+-	free(l->buf);
+-	out[i] = '\0';
+-	return (out);
+-}
+-
+-
+-
+-
+-/* this function find the thread corresponding to fd
+- * or creates it if it does not exist yet (modifying the lst arg)
+- * it modifies its rd argument to be the correct rd_thread
+- * it returns the adress of the list node containing rd
+- * so it can be deleted if needed.
+- *
+- * the malloc should be inside the if (*it == NULL)
+- * but isn't for norminette and number of lines considerations */
+-static **t_list ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc) 
+-{
+-	t_list **it;
+-
+-	it = lst;
+-	while (*it != NULL && ((t_rd_thread *) (*it)->content)->fd != fd)
+-		*it = (*it)->next;
+-	*rd = malloc(sizeof(t_rd_thread));
+-	if (!*rd)
+-		*errc = -1;
+-	if (*it == NULL && *errc != -1)
+-	{
+-		*rd -> fd = fd;
+-		*rd -> i = 0;
+-		*rd -> nread = BUFFSIZE;
+-		ft_lstput_front_errcode(lst, *rd, errc);
+-		if (errc != -1)
+-			return (lst);
+-	}
+-	free(*rd);
+-	if (errc == -1)
+-		return (NULL);
+-	*rd = (*it) -> content;
+-	return (it);
+-}
+-
+-
+-
+-char *get_next_line(int fd)
+-{
+-	static t_list *threads = NULL;	//TODO list for bonusnus
+-	t_rd_thread *rd;
+-	t_list **maybe_delme;
+-	t_line l; 
+-	int errcode;
+-
+-	ft_init_line(&l);
+-	maybe_delme = ft_prep_rd(&threads, &rd, fd, &errcode); 
+-	while (errcode != -1 && rd->i != (uint) rd->nread)
+-	{
+-		if (rd->i == 0)
+-			rd->nread = read(fd, (rd->buf), BUFFSIZE);// TODO handle read error
+-		if (l.i >= l.sz)
+-			ft_dblsz_line(&l, &errcode);
+-		if (errcode != -1 && rd->nread != 0)
+-			l.buf[l.i++] = (rd->buff)[rd->i++];
+-		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
+-			break;
+-		rd->i %= BUFFSIZE;
+-	}
+-	if (errcode == -1 || l.sz == 0)
+-		ft_lstrm_head(maybe_delme);
+-	return (ft_wrap_line(&l, errcode));
+-}
+-
+-#include <fcntl.h>
+-#include <stdio.h>
+-
+-int main(int ac, char **av)
+-{
+-	if (ac != 2)
+-		exit(-1);
+-	int fd = open(av[1], O_RDONLY);
+-	char *line;
+-	
+-	line = get_next_line(fd);
+-	int i = 0;
+-	while (line != NULL)
+-	{
+-		printf("line %d : %s\n", i++, line);
+-		line = get_next_line(fd);
+-		//printf("line %d : %s\n", i++, line);
+-	}
+-	return (0);
+-}
+-
+-
+-
+diff --git a/utils.c b/utils.c
+deleted file mode 100644
+index c0e8efa..0000000
+--- a/utils.c
++++ /dev/null
+@@ -1,53 +0,0 @@
+-#include <stdlib.h>
+-#include <unistd.h>
+-#include "get_next_line.h"
+-
+-int ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
+-{
+-	int nread;
+-
+-	nread = read(fd, buf, n);
+-	if (nread == -1)
+-		*errcode = -1;
+-	return (nread);
+-}
+-
+-void ft_lstrm_head(t_list **lst, void (*del)(void *))
+-{
+-	t_list *tmp;
+-
+-	del((*lst)->content);
+-	tmp = (*lst)->next;
+-	free (*lst);
+-	*lst = tmp;
+-}
+-
+-void ft_lstput_front_errcode(t_list **lst, void *content, int *errcode)
+-{
+-	t_list *new_cell;
+-
+-	new_cell = malloc(sizeof(t_list));
+-	if (!new_cell)
+-	{
+-		*errcode = -1;
+-		return ;
+-	}
+-	new_cell->content = content;
+-	new_cell->next = *lst;
+-	*lst = new_cell;
+-}
+-
+-typedef unsigned char uchar;
+-void *ft_memcpy(void *dst, const void *src, size_t len)
+-{
+-	uint i;
+-
+-	i = 0;
+-	while (i < len)
+-	{
+-		*((uchar *)dst + i) = *((uchar *)src + i);
+-		++i;
+-	}
+-	return (dst);
+-}
+-
