@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include "get_next_line.h"
 
+typedef unsigned char	t_uchar;
+
 int	ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
 {
 	int	nread;
@@ -14,7 +16,7 @@ int	ft_read_errcode(int fd, char *buf, size_t n, int *errcode)
 
 void	*ft_memcpy(void *dst, const void *src, size_t len)
 {
-	t_uint	i;
+	size_t	i;
 
 	i = 0;
 	while (i < len)

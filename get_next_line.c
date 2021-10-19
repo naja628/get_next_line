@@ -13,7 +13,7 @@
 typedef struct s_rd_thread
 {
 	int		fd;
-	t_uint	i;
+	size_t	i;
 	int		nrd;
 	char	buf[BUFFER_SIZE];
 }	t_rd_thread;
@@ -21,7 +21,7 @@ typedef struct s_rd_thread
 typedef struct s_line
 {
 	char	*buf;
-	t_uint	i;
+	size_t	i;
 	size_t	sz;
 }	t_line;
 
@@ -57,7 +57,7 @@ static void	ft_dblsz_line(t_line *l, int *errcode)
 static char	*ft_wrap_line(t_line *l, int errcode)
 {
 	char	*out;
-	t_uint	i;
+	size_t	i;
 
 	out = malloc(sizeof(char) * (l->i + 1));
 	if (errcode == -1 || l->i == 0 || !out)
@@ -98,7 +98,7 @@ char	*get_next_line(int fd)
 	ft_init_line(&l, &ec);
 	if (fd != rd.fd)
 		ft_reset_buf(&rd, fd);
-	while (ec != -1 && !(rd.nrd != BUFFER_SIZE && rd.i == (t_uint) rd.nrd))
+	while (ec != -1 && !(rd.nrd != BUFFER_SIZE && rd.i == (size_t) rd.nrd))
 	{
 		rd.i %= BUFFER_SIZE;
 		if (rd.i == 0)
@@ -110,5 +110,86 @@ char	*get_next_line(int fd)
 		if (rd.i != 0 && rd.buf[rd.i - 1] == '\n')
 			break ;
 	}
+	if (rd.i == (size_t) rd.nrd)
+		rd.i = 0;
 	return (ft_wrap_line(&l, ec));
 }
+
+#ifdef TEST0
+# include <fcntl.h>
+# include <stdio.h>
+
+int main(int ac, char **av)
+{
+	if (ac != 2)
+		exit(-1);
+	int fd = open(av[1], O_RDONLY);
+	char *line;
+	
+	line = get_next_line(fd);
+	int i = 0;
+	while (line != NULL)
+	{
+		printf("line %d: %s", i++, line);
+		free(line);
+		line = get_next_line(fd);
+	}
+	close (fd);
+	return (0);
+}
+#endif
+#ifdef TEST1
+# include <fcntl.h>
+# include <stdio.h>
+
+int main()
+{
+	char *line;
+	
+	line = get_next_line(-1);
+	printf("reading from -1 : %p\n", line);
+	line = get_next_line(42);
+	printf("reading from 42 : %p\n", line);
+	line = get_next_line(0);
+	int i = 0;
+	while (line != NULL)
+	{
+		printf("line %d: %s", i++, line);
+		free(line);
+		line = get_next_line(0);
+	}
+	return (0);
+}
+#endif
+#ifdef TEST2
+# include <fcntl.h>
+# include <stdio.h>
+
+int main(int ac, char **av)
+{
+	if (ac != 3)
+		exit (-1);
+	int fd1 = open(av[1], O_RDONLY);
+	int fd2 = open(av[2], O_RDONLY);
+	char *line = get_next_line(fd1);
+	int i = 0;
+	while (i < 3)
+	{
+		printf("line %d: %s", i++, line);
+		free(line);
+		line = get_next_line(fd1);
+	}
+	line = get_next_line(fd2);
+	i = 0;
+	while (line != NULL)
+	{
+		printf("line %d: %s", i++, line);
+		free(line);
+		line = get_next_line(fd2);
+	}
+	close(fd1);
+	close(fd2);
+	return 0;
+}
+
+#endif

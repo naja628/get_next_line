@@ -2,9 +2,6 @@
 # define GET_NEXT_LINE_BONUS_H
 # include <stddef.h>
 
-typedef unsigned int	t_uint;
-typedef unsigned char	t_uchar;
-
 typedef struct s_list
 {
 	void			*content;
