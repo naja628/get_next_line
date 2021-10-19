@@ -175,10 +175,12 @@ int main(int ac, char **av)
 	int i = 0;
 	while (i < 3)
 	{
-		printf("line %d: %s", i++, line);
+		if (line)
+			printf("line %d: %s", i++, line);
 		free(line);
 		line = get_next_line(fd1);
 	}
+	free(line);
 	line = get_next_line(fd2);
 	i = 0;
 	while (line != NULL)

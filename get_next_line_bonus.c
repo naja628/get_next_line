@@ -174,7 +174,7 @@ int main(int ac, char **av)
 	line = get_next_line(0);
 	line2 = get_next_line(fd);
 	int i = 0;
-	while (line && line2)
+	while (line2)
 	{
 		printf("kdb line %d: %s", i++, line);
 		free(line);
@@ -183,6 +183,7 @@ int main(int ac, char **av)
 		free(line2);
 		line2 = get_next_line(fd);
 	}
+	free(line);
 	close (fd);
 	return (0);
 }
