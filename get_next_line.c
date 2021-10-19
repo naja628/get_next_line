@@ -112,27 +112,3 @@ char	*get_next_line(int fd)
 	}
 	return (ft_wrap_line(&l, ec));
 }
-
-#ifdef TEST
-# include <fcntl.h>
-# include <stdio.h>
-
-int main(int ac, char **av)
-{
-	if (ac != 2)
-		exit(-1);
-	int fd = open(av[1], O_RDONLY);
-	char *line;
-	
-	line = get_next_line(fd);
-	int i = 0;
-	while (line != NULL)
-	{
-		printf("line %d: %s", i++, line);
-		free(line);
-		line = get_next_line(fd);
-	}
-	close (fd);
-	return (0);
-}
-#endif
