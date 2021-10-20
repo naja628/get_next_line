@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: najacque <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/10/20 14:30:11 by najacque          #+#    #+#             */
+/*   Updated: 2021/10/20 14:54:41 by najacque         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <unistd.h>
 #include <stdlib.h>
 #include "get_next_line_bonus.h"
@@ -133,7 +145,7 @@ char	*get_next_line(int fd)
 		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
 			break ;
 	}
-	if (ec == -1 || l.i == 0 || (rd->fd == 0 && rd->i == (size_t) rd->nrd))
+	if (ec == -1 || l.i == 0 || rd->i == (size_t) rd->nrd)
 		ft_lstrm_head(maybe_delme, free);
 	return (ft_wrap_line(&l, ec));
 }
