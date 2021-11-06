@@ -90,14 +90,8 @@ static char	*ft_wrap_line(t_line *l, int errcode)
 }
 
 /* this function find the thread corresponding to fd
- * or creates it if it does not exist yet (modifying the lst arg)
- * it modifies *rd to be the correct rd_thread
- * it returns the adress of the list node containing rd
- * so it can be deleted if needed.
- *
- * the choice to return the list and modify rd in place and not 
- * vice versa is pretty arbitrary 
- * except for the fact that triple pointers are frightening */
+ * or creates it if it does not exist yet 
+ * it returns the adress of the list node containing rd */
 static t_list	**ft_prep_rd(t_list **lst, int fd, int *errc)
 {
 	t_list		**it;
