@@ -1,0 +1,145 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line_bonus.c                              :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: najacque <marvin@42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2021/10/20 14:30:11 by najacque          #+#    #+#             */
+/*   Updated: 2021/10/20 14:54:41 by najacque         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include <unistd.h>
+#include <stdlib.h>
+#include "get_next_line_bonus.h"
+
+#ifndef BUFFER_SIZE
+# define BUFFER_SIZE 42
+#endif
+#if BUFFER_SIZE < 1
+# undef BUFFER_SIZE
+# define BUFFER_SIZE 42
+#endif
+
+typedef struct s_rd_thread
+{
+	int		fd;
+	size_t	i;
+	int		nrd;
+	char	buf[BUFFER_SIZE];
+}	t_rd_thread;
+
+typedef struct s_line
+{
+	char	*buf;
+	size_t	i;
+	size_t	sz;
+}	t_line;
+
+static void	ft_init_line(t_line *l, int *errcode)
+{
+	l->buf = malloc(sizeof(char) * BUFFER_SIZE);
+	if (!l->buf)
+	{
+		*errcode = -1;
+		return ;
+	}
+	*errcode = 0;
+	l->i = 0;
+	l->sz = BUFFER_SIZE;
+}
+
+static void	ft_dblsz_line(t_line *l, int *errcode)
+{
+	char	*bigger_buf;
+
+	bigger_buf = malloc(2 * l->sz * sizeof(char));
+	if (!bigger_buf)
+	{
+		*errcode = -1;
+		return ;
+	}
+	ft_memcpy(bigger_buf, l->buf, l->sz);
+	l->sz *= 2;
+	free(l->buf);
+	l->buf = bigger_buf;
+}
+
+static char	*ft_wrap_line(t_line *l, int errcode)
+{
+	char	*out;
+	size_t	i;
+
+	out = malloc(sizeof(char) * (l->i + 1));
+	if (errcode == -1 || l->i == 0 || !out)
+	{
+		free(out);
+		free(l->buf);
+		return (NULL);
+	}
+	i = 0;
+	while (i < l->i)
+	{
+		out[i] = l->buf[i];
+		++i;
+	}
+	free(l->buf);
+	out[i] = '\0';
+	return (out);
+}
+
+/* this function find the thread corresponding to fd
+ * or creates it if it does not exist yet 
+ * it returns the adress of the list node containing rd */
+static t_list	**ft_prep_rd(t_list **lst, int fd, int *errc)
+{
+	t_list		**it;
+	t_rd_thread	*rd;
+
+	it = lst;
+	while (*it != NULL && ((t_rd_thread *)(*it)->content)->fd != fd)
+		it = &((*it)->next);
+	if (*it == NULL && *errc != -1)
+	{
+		rd = ft_malloc_errcode(sizeof(t_rd_thread), errc);
+		rd->fd = fd;
+		rd->i = 0;
+		rd->nrd = BUFFER_SIZE;
+		ft_lstput_front_errcode(lst, rd, errc);
+		if (*errc != -1)
+			return (lst);
+		free (rd);
+	}
+	if (*errc == -1)
+		return (NULL);
+	return (it);
+}
+
+char	*get_next_line(int fd)
+{
+	static t_list	*threads = NULL;
+	t_rd_thread		*rd;
+	t_list			**rd_node;
+	t_line			l;
+	int				ec;
+
+	ft_init_line(&l, &ec);
+	rd_node = ft_prep_rd(&threads, fd, &ec);
+	rd = (*rd_node)->content;
+	while (ec != -1 && !(rd->nrd != BUFFER_SIZE && rd->i == (size_t) rd->nrd))
+	{
+		rd->i %= BUFFER_SIZE;
+		if (rd->i == 0)
+			rd->nrd = ft_read_errcode(fd, rd->buf, BUFFER_SIZE, &ec);
+		if (l.i >= l.sz)
+			ft_dblsz_line(&l, &ec);
+		if (ec != -1 && rd->nrd != 0)
+			l.buf[l.i++] = (rd->buf)[rd->i++];
+		if (rd->i != 0 && rd->buf[rd->i - 1] == '\n')
+			break ;
+	}
+	if (ec == -1 || l.i == 0 || rd->i == (size_t) rd->nrd)
+		ft_lstrm_head(rd_node, free);
+	return (ft_wrap_line(&l, ec));
+}
