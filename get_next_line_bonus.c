@@ -98,41 +98,41 @@ static char	*ft_wrap_line(t_line *l, int errcode)
  * the choice to return the list and modify rd in place and not 
  * vice versa is pretty arbitrary 
  * except for the fact that triple pointers are frightening */
-static t_list	**ft_prep_rd(t_list **lst, t_rd_thread **rd, int fd, int *errc)
+static t_list	**ft_prep_rd(t_list **lst, int fd, int *errc)
 {
-	t_list	**it;
+	t_list		**it;
+	t_rd_thread	*rd;
 
 	it = lst;
 	while (*it != NULL && ((t_rd_thread *)(*it)->content)->fd != fd)
 		it = &((*it)->next);
 	if (*it == NULL && *errc != -1)
 	{
-		*rd = ft_malloc_errcode(sizeof(t_rd_thread), errc);
-		(*rd)->fd = fd;
-		(*rd)->i = 0;
-		(*rd)->nrd = BUFFER_SIZE;
-		ft_lstput_front_errcode(lst, *rd, errc);
+		rd = ft_malloc_errcode(sizeof(t_rd_thread), errc);
+		rd->fd = fd;
+		rd->i = 0;
+		rd->nrd = BUFFER_SIZE;
+		ft_lstput_front_errcode(lst, rd, errc);
 		if (*errc != -1)
 			return (lst);
-		free (*rd);
+		free (rd);
 	}
 	if (*errc == -1)
 		return (NULL);
-	*rd = (*it)->content;
 	return (it);
 }
 
-/* rd needs to be a pointer because penult line of prep_rd */
 char	*get_next_line(int fd)
 {
 	static t_list	*threads = NULL;
 	t_rd_thread		*rd;
-	t_list			**maybe_delme;
+	t_list			**rd_node;
 	t_line			l;
 	int				ec;
 
 	ft_init_line(&l, &ec);
-	maybe_delme = ft_prep_rd(&threads, &rd, fd, &ec);
+	rd_node = ft_prep_rd(&threads, fd, &ec);
+	rd = (*rd_node)->content;
 	while (ec != -1 && !(rd->nrd != BUFFER_SIZE && rd->i == (size_t) rd->nrd))
 	{
 		rd->i %= BUFFER_SIZE;
@@ -146,6 +146,6 @@ char	*get_next_line(int fd)
 			break ;
 	}
 	if (ec == -1 || l.i == 0 || rd->i == (size_t) rd->nrd)
-		ft_lstrm_head(maybe_delme, free);
+		ft_lstrm_head(rd_node, free);
 	return (ft_wrap_line(&l, ec));
 }
